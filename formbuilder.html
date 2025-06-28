@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Elegant Form Builder Mockup</title>
+
+    <!-- Google Fonts for that elegant look -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;700&display=swap" rel="stylesheet">
+    
+    <!-- Alpine.js -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+    <!-- HTMX -->
+    <script src="https://unpkg.com/htmx.org@1.9.5" integrity="sha384-cZud+kH2gBL+nHMCkuc9/3KKfgNdZGcZltUfkUxmHdLMpNsAEBsdQE29L/ZEa/wD" crossorigin="anonymous"></script>
+
+    <style>
+        /* --- General Setup & Theming --- */
+        :root {
+            --font-main: 'Manrope', sans-serif;
+            --color-bg-light: #f8f9fa;
+            --color-bg-dark: #212529;
+            --color-border: #dee2e6;
+            --color-text-dark: #343a40;
+            --color-text-light: #f8f9fa;
+            --color-primary: #4f46e5;
+            --color-primary-light: #c7d2fe;
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --border-radius: 0.5rem;
+        }
+
+        /* --- Basic Styling --- */
+        * { box-sizing: border-box; }
+
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            font-family: var(--font-main);
+            background-color: var(--color-bg-light);
+            color: var(--color-text-dark);
+            font-size: 16px;
+        }
+
+        body {
+            display: grid;
+            grid-template-columns: 450px 1fr;
+            height: 100vh;
+        }
+
+        /* --- Builder Panel (Left Side) --- */
+        .builder-panel {
+            background-color: #fff;
+            border-right: 1px solid var(--color-border);
+            padding: 2rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .builder-panel h1 {
+            margin: 0;
+            font-size: 1.75rem;
+        }
+        .builder-panel h2 {
+            margin: 0 0 0.5rem 0;
+            font-size: 1rem;
+            font-weight: 500;
+            color: #6c757d;
+            border-bottom: 1px solid var(--color-border);
+            padding-bottom: 0.5rem;
+        }
+        
+        .form-settings .input-group {
+            margin-bottom: 1rem;
+        }
+        
+        label {
+            display: block;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        input[type="text"], input[type="email"] {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--color-border);
+            border-radius: var(--border-radius);
+            font-size: 1rem;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        input[type="text"]:focus, input[type="email"]:focus {
+            outline: none;
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 3px var(--color-primary-light);
+        }
+        
+        .question-card {
+            background-color: var(--color-bg-light);
+            border: 1px solid var(--color-border);
+            border-radius: var(--border-radius);
+            margin-bottom: 1rem;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .question-header {
+            padding: 1rem;
+            font-weight: 500;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            border-bottom: 1px solid transparent;
+        }
+        
+        .question-card.open .question-header {
+            border-bottom-color: var(--color-border);
+        }
+        
+        .question-body {
+            padding: 1rem;
+            border-top: 1px solid var(--color-border);
+        }
+        
+        .choice-editor {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .delete-btn {
+            background: none;
+            border: none;
+            color: #adb5bd;
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .delete-btn:hover { color: #dc3545; background-color: #f8d7da; }
+        
+        .add-question-buttons {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        
+        .btn, .htmx-btn {
+            background-color: #fff;
+            border: 1px solid var(--color-border);
+            padding: 0.5rem 1rem;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+
+        .btn:hover, .htmx-btn:hover {
+            border-color: var(--color-primary);
+            color: var(--color-primary);
+        }
+
+        /* --- Preview Panel (Right Side) --- */
+        .preview-panel {
+            background-color: var(--color-bg-dark);
+            padding: 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative; /* For transition positioning */
+        }
+        
+        .preview-content {
+            width: 100%;
+            max-width: 700px;
+            height: 500px;
+            color: var(--color-text-light);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            position: relative;
+        }
+        
+        .question-slide {
+            position: absolute;
+            width: 100%;
+            left: 0;
+            right: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        /* Alpine.js transition classes */
+        .slide-fade-enter-active, .slide-fade-leave-active { transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
+        .slide-fade-enter-from { opacity: 0; transform: translateY(30px); }
+        .slide-fade-leave-to { opacity: 0; transform: translateY(-30px); }
+
+        .question-prompt {
+            font-size: 2.25rem;
+            font-weight: 500;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .question-number {
+            font-size: 1.5rem;
+            font-weight: 400;
+            color: var(--color-primary);
+        }
+
+        .preview-input, .preview-textarea {
+            background: none;
+            border: none;
+            color: var(--color-text-light);
+            border-bottom: 2px solid #6c757d;
+            font-size: 2rem;
+            padding: 0.5rem 0;
+            margin-top: 2rem;
+            width: 100%;
+        }
+
+        .preview-input:focus, .preview-textarea:focus {
+            outline: none;
+            border-bottom-color: var(--color-primary);
+        }
+        
+        .preview-choices {
+            margin-top: 2rem;
+            list-style: none;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .preview-choices li button {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background-color: rgba(255, 255, 255, 0.1);
+            border: 1px solid #6c757d;
+            color: var(--color-text-light);
+            border-radius: 0.25rem;
+            cursor: pointer;
+            text-align: left;
+            font-size: 1.1rem;
+            transition: all 0.2s ease;
+        }
+
+        .preview-choices li button:hover {
+            border-color: var(--color-primary);
+            background-color: rgba(79, 70, 229, 0.3);
+        }
+
+        .choice-key {
+            border: 1px solid var(--color-text-light);
+            padding: 0.2rem 0.5rem;
+            border-radius: 0.2rem;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+        
+        .progress-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 4px;
+            background-color: var(--color-primary);
+            transition: width 0.5s ease;
+        }
+
+    </style>
+</head>
+
+<!-- 
+    The main Alpine.js data store for the whole application.
+    This acts as our single source of truth.
+-->
+<body x-data="formBuilder">
+
+    <!-- =========== BUILDER PANEL (LEFT) =========== -->
+    <aside class="builder-panel">
+        <div>
+            <h1>Form Builder</h1>
+            <p style="margin-top: 0.5rem; color: #6c757d;">An elegant, usable builder powered by Alpine.js & HTMX.</p>
+        </div>
+
+        <!-- Global Form Settings -->
+        <section class="form-settings">
+            <h2>Settings</h2>
+            <div class="input-group">
+                <label for="formTitle">Form Title</label>
+                <input id="formTitle" type="text" x-model="form.title" placeholder="My Awesome Form">
+            </div>
+        </section>
+
+        <!-- Question List -->
+        <section id="question-list">
+            <h2>Questions</h2>
+            
+            <template x-if="form.questions.length === 0">
+                <p style="color: #6c757d; text-align: center; padding: 2rem; border: 2px dashed var(--color-border); border-radius: var(--border-radius);">Your form is empty. Add a question below!</p>
+            </template>
+            
+            <!-- Loop through each question -->
+            <template x-for="(question, index) in form.questions" :key="question.id">
+                <div class="question-card" :class="{ 'open': question.isOpen }" x-data="{
+                    // We re-declare 'isOpen' here to scope it to each card.
+                    // This is cleaner than managing a global array of open states.
+                    init() { if (typeof question.isOpen === 'undefined') question.isOpen = false; }
+                }">
+                    <div class="question-header" @click="question.isOpen = !question.isOpen">
+                        <span x-text="question.text || 'New Question'"></span>
+                        <svg x-show="!question.isOpen" width="20" height="20" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd"></path></svg>
+                        <svg x-show="question.isOpen" width="20" height="20" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5 10a1 1 0 011-1h8a1 1 0 110 2H6a1 1 0 01-1-1z" clip-rule="evenodd"></path></svg>
+                    </div>
+
+                    <div class="question-body" x-show="question.isOpen" x-transition>
+                        <div class="input-group">
+                            <label :for="'q_text_'+question.id">Question Text</label>
+                            <input :id="'q_text_'+question.id" type="text" x-model="question.text" placeholder="e.g., What is your name?">
+                        </div>
+
+                        <!-- Editor for Multiple Choice options -->
+                        <template x-if="question.type === 'multiple_choice'">
+                            <div class="input-group" style="margin-top: 1rem;">
+                                <label>Choices</label>
+                                <template x-for="(choice, choiceIndex) in question.choices" :key="choiceIndex">
+                                    <div class="choice-editor">
+                                        <input type="text" x-model="choice.text" :placeholder="'Choice ' + (choiceIndex + 1)">
+                                        <button class="delete-btn" @click="removeChoice(index, choiceIndex)" title="Remove choice">
+                                            <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd"></path></svg>
+                                        </button>
+                                    </div>
+                                </template>
+                                <button class="btn" @click="addChoice(index)" style="margin-top: 0.5rem;">+ Add Choice</button>
+                            </div>
+                        </template>
+
+                        <!-- Button to delete the whole question -->
+                        <button class="delete-btn" @click="removeQuestion(index)" style="margin-top: 1rem; color: #dc3545;">Delete Question</button>
+                    </div>
+                </div>
+            </template>
+        </section>
+
+        <!-- "Add Question" section using HTMX to fetch from templates below -->
+        <section>
+            <h2>Add Question</h2>
+            <div class="add-question-buttons"
+                hx-post="/add-question"
+                hx-target="#question-list"
+                hx-swap="beforeend"
+                _="on htmx:configRequest set my.questionType to event.target.dataset.type"
+            >
+                <!-- These buttons will trigger an HTMX request -->
+                <button class="htmx-btn" data-type="welcome_screen">👋 Welcome Screen</button>
+                <button class="htmx-btn" data-type="short_text">✒️ Short Text</button>
+                <button class="htmx-btn" data-type="multiple_choice">🔢 Multiple Choice</button>
+                <button class="htmx-btn" data-type="email">📧 Email</button>
+                <button class="htmx-btn" data-type="thank_you_screen">🎉 Thank You Screen</button>
+            </div>
+            <p style="margin-top: 0.5rem; color: #6c757d; font-size: 0.8rem;">
+                <strong>HTMX Demo:</strong> Clicking a button triggers a (mock) POST request.
+                An event listener intercepts it, adds data to our Alpine.js store, then lets HTMX continue.
+                HTMX renders a template into the list, which Alpine then makes interactive.
+            </p>
+        </section>
+
+    </aside>
+
+    <!-- =========== PREVIEW PANEL (RIGHT) =========== -->
+    <main class="preview-panel" 
+        x-data="formPreview" 
+        @keyup.enter.window="if(canAdvance()) { advance() }"
+        @keyup.1.window="if(form.questions[currentIndex]?.type === 'multiple_choice' && form.questions[currentIndex].choices.length >= 1) { selectChoiceAndAdvance(0) }"
+        @keyup.2.window="if(form.questions[currentIndex]?.type === 'multiple_choice' && form.questions[currentIndex].choices.length >= 2) { selectChoiceAndAdvance(1) }"
+        @keyup.3.window="if(form.questions[currentIndex]?.type === 'multiple_choice' && form.questions[currentIndex].choices.length >= 3) { selectChoiceAndAdvance(2) }"
+    >
+        <div class="preview-content">
+
+            <!-- Loop through all questions, but only show the current one -->
+            <template x-for="(question, index) in form.questions" :key="question.id">
+                <div x-show="currentIndex === index" 
+                     class="question-slide" 
+                     x-transition:enter.duration.500ms.ease-in-out
+                     x-transition:leave.duration.300ms.ease-in-out
+                     class="slide-fade"
+                >
+
+                    <!-- Render different content based on question type -->
+
+                    <!-- WELCOME SCREEN -->
+                    <template x-if="question.type === 'welcome_screen'">
+                        <div>
+                            <h2 class="question-prompt" x-text="question.text"></h2>
+                            <p style="font-size: 1.2rem; color: #adb5bd;" x-text="form.title"></p>
+                            <button class="btn" style="background-color: var(--color-primary); color: #fff; margin-top: 2rem; padding: 1rem 2rem; font-size: 1.1rem;" @click="advance()">Start</button>
+                        </div>
+                    </template>
+                    
+                    <!-- SHORT TEXT -->
+                    <template x-if="question.type === 'short_text'">
+                        <div>
+                            <h3 class="question-prompt">
+                                <span class="question-number" x-text="(index) + ' →'"></span>
+                                <span x-text="question.text"></span>
+                            </h3>
+                            <input class="preview-input" type="text" x-model="answers[question.id]" :placeholder="question.placeholder" @input="dirty = true">
+                        </div>
+                    </template>
+                    
+                    <!-- MULTIPLE CHOICE -->
+                    <template x-if="question.type === 'multiple_choice'">
+                         <div>
+                            <h3 class="question-prompt">
+                                <span class="question-number" x-text="(index) + ' →'"></span>
+                                <span x-text="question.text"></span>
+                            </h3>
+                             <ul class="preview-choices">
+                                 <template x-for="(choice, choiceIndex) in question.choices" :key="choiceIndex">
+                                     <li><button @click="selectChoiceAndAdvance(choiceIndex)">
+                                         <span class="choice-key" x-text="choiceIndex + 1"></span>
+                                         <span x-text="choice.text"></span>
+                                     </button></li>
+                                 </template>
+                             </ul>
+                         </div>
+                    </template>
+
+                    <!-- EMAIL -->
+                    <template x-if="question.type === 'email'">
+                        <div>
+                            <h3 class="question-prompt">
+                                <span class="question-number" x-text="(index) + ' →'"></span>
+                                <span x-text="question.text"></span>
+                            </h3>
+                            <input class="preview-input" type="email" x-model="answers[question.id]" placeholder="name@example.com" @input="dirty = true">
+                        </div>
+                    </template>
+                    
+                    <!-- THANK YOU SCREEN -->
+                    <template x-if="question.type === 'thank_you_screen'">
+                        <div>
+                             <h2 class="question-prompt" x-text="question.text"></h2>
+                             <p style="font-size: 1.2rem; color: #adb5bd;">Your submission has been recorded (not really!)</p>
+                             <button class="btn" style="margin-top: 2rem;" @click="currentIndex = 0; answers = {}">Restart</button>
+                        </div>
+                    </template>
+
+                </div>
+            </template>
+            
+            <!-- Progress Bar -->
+            <div class="progress-bar" :style="`width: ${progress}%`"></div>
+
+        </div>
+    </main>
+    
+    <!-- =========== HTMX TEMPLATES (HIDDEN) =========== -->
+    <!-- These are fragments that HTMX will grab and insert into the DOM. -->
+    <div id="htmx-templates" style="display: none;">
+        <div id="htmx_welcome_screen"> <!-- This content will be ignored; the Alpine listener handles it --> </div>
+        <div id="htmx_short_text"></div>
+        <div id="htmx_multiple_choice"></div>
+        <div id="htmx_email"></div>
+        <div id="htmx_thank_you_screen"></div>
+    </div>
+
+
+    <script>
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('formBuilder', () => ({
+                // The single source of truth for the entire form
+                form: {
+                    title: 'My Interview Prep Form',
+                    questions: [
+                        { id: 1, type: 'welcome_screen', text: 'Welcome!', isOpen: false },
+                        { id: 2, type: 'short_text', text: 'First, what is your name?', placeholder: 'Type your name here', isOpen: true },
+                        { id: 3, type: 'multiple_choice', text: 'Which stack are you most comfortable with?', choices: [{text: 'LAMP'}, {text: 'MERN'}, {text: 'HTMX + Alpine.js'}], isOpen: false },
+                        { id: 4, type: 'email', text: 'Great. What\'s your email address?', isOpen: false },
+                        { id: 5, type: 'thank_you_screen', text: 'All done. Thanks!', isOpen: false }
+                    ]
+                },
+                
+                // --- Builder Panel Methods ---
+                addQuestion(type) {
+                    const newQuestion = {
+                        id: Date.now(),
+                        type: type,
+                        isOpen: true // Open new questions by default for editing
+                    };
+                    
+                    // Add default properties based on type
+                    switch (type) {
+                        case 'welcome_screen':
+                            newQuestion.text = 'Welcome to the Form!'; break;
+                        case 'short_text':
+                            newQuestion.text = 'Your new question'; break;
+                        case 'multiple_choice':
+                            newQuestion.text = 'Your multiple choice question';
+                            newQuestion.choices = [{text: 'Choice A'}, {text: 'Choice B'}];
+                            break;
+                        case 'email':
+                            newQuestion.text = 'What is your email?'; break;
+                        case 'thank_you_screen':
+                            newQuestion.text = 'Thank you for your time!'; break;
+                    }
+
+                    this.form.questions.push(newQuestion);
+                },
+
+                removeQuestion(index) {
+                    if (confirm('Are you sure you want to delete this question?')) {
+                        this.form.questions.splice(index, 1);
+                    }
+                },
+                
+                addChoice(questionIndex) {
+                    this.form.questions[questionIndex].choices.push({ text: 'New Choice' });
+                },
+                
+                removeChoice(questionIndex, choiceIndex) {
+                    this.form.questions[questionIndex].choices.splice(choiceIndex, 1);
+                },
+            }));
+            
+            Alpine.data('formPreview', () => ({
+                currentIndex: 0,
+                answers: {},
+                dirty: false, // track if a user has typed in an input
+                
+                // --- Preview Panel Getters & Methods ---
+                get progress() {
+                    if (this.form.questions.length < 2) return 0;
+                    // Make progress smoother - don't count welcome/thank you screens in total
+                    const totalSteps = this.form.questions.filter(q => q.type !== 'welcome_screen' && q.type !== 'thank_you_screen').length;
+                    const completedSteps = this.currentIndex - (this.form.questions.some(q => q.type === 'welcome_screen') ? 1 : 0);
+                    if (totalSteps === 0) return 100;
+                    return (completedSteps / totalSteps) * 100;
+                },
+
+                canAdvance() {
+                    const question = this.form.questions[this.currentIndex];
+                    if (!question) return false;
+                    
+                    // Allow advancing from welcome/mcq/thanks screens without extra input
+                    const instantAdvanceTypes = ['welcome_screen', 'multiple_choice', 'thank_you_screen'];
+                    if (instantAdvanceTypes.includes(question.type)) return true;
+                    
+                    // For text/email, require input before 'Enter' works
+                    return !!this.answers[question.id] && this.dirty;
+                },
+
+                advance() {
+                    if (this.currentIndex < this.form.questions.length - 1) {
+                        this.currentIndex++;
+                        this.dirty = false;
+                    }
+                },
+                
+                selectChoiceAndAdvance(choiceIndex) {
+                    const question = this.form.questions[this.currentIndex];
+                    if (question && question.type === 'multiple_choice') {
+                        this.answers[question.id] = question.choices[choiceIndex].text;
+                        this.advance();
+                    }
+                }
+            }));
+
+        });
+
+        // --- HTMX and Alpine.js Inter-op ---
+        // Listen for the htmx:configRequest event, which fires before a request is made.
+        document.body.addEventListener('htmx:configRequest', function(evt) {
+            // Get the type of question from the button's data attribute
+            const questionType = evt.detail.elt.dataset.type;
+
+            if (questionType) {
+                // We're going to handle the state change ourselves in Alpine.js
+                // So, we'll get the main Alpine component and call our `addQuestion` method.
+                const formBuilderComponent = document.body._x_dataStack[0];
+                formBuilderComponent.addQuestion(questionType);
+
+                // Prevent HTMX from making a real network request.
+                // Instead, tell it to process the content from our hidden template tag.
+                // NOTE: In a real app, the `post` would go to the server, and the server
+                // would return the HTML for the new question card. Here, we fake it.
+                evt.detail.path = '#htmx_' + questionType; // Change path to our internal template
+                evt.detail.verb = 'get'; // Change to GET as we are fetching local content
+            }
+        });
+
+    </script>
+</body>
+</html>
