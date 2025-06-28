@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Elegant Form Builder - Unified Alpine.js</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <style>
+        :root {
+            --font-main: 'Manrope', sans-serif;
+            --color-bg-light: #f8f9fa;
+            --color-bg-dark: #212529;
+            --color-border: #dee2e6;
+            --color-text-dark: #343a40;
+            --color-text-light: #f8f9fa;
+            --color-primary: #4f46e5;
+            --color-primary-light: #c7d2fe;
+            --color-danger: #ef4444;
+            --color-disabled: #6c757d;
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --border-radius: 0.5rem;
+        }
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-1px, 0, 0); }
+            20%, 80% { transform: translate3d(2px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+            40%, 60% { transform: translate3d(4px, 0, 0); }
+        }
+        * { box-sizing: border-box; }
+        html, body {
+            height: 100%; margin: 0; padding: 0;
+            font-family: var(--font-main); background-color: var(--color-bg-light);
+            color: var(--color-text-dark); font-size: 16px;
+        }
+        body { display: grid; grid-template-columns: 450px 1fr; height: 100vh; }
+        .builder-panel {
+            background-color: #fff; border-right: 1px solid var(--color-border); padding: 2rem;
+            overflow-y: auto; display: flex; flex-direction: column; gap: 1.5rem;
+        }
+        h1 { margin: 0; font-size: 1.75rem; }
+        h2 {
+            margin: 0 0 0.5rem 0; font-size: 1rem; font-weight: 500; color: var(--color-disabled);
+            border-bottom: 1px solid var(--color-border); padding-bottom: 0.5rem;
+        }
+        .input-group { margin-bottom: 1rem; }
+        label { display: block; font-weight: 500; margin-bottom: 0.5rem; font-size: 0.9rem; }
+        input[type="text"], input[type="email"] {
+            width: 100%; padding: 0.75rem; border: 1px solid var(--color-border);
+            border-radius: var(--border-radius); font-size: 1rem; transition: all 0.2s;
+        }
+        input[type="text"]:focus, input[type="email"]:focus {
+            outline: none; border-color: var(--color-primary);
+            box-shadow: 0 0 0 3px var(--color-primary-light);
+        }
+        .question-card {
+            background-color: var(--color-bg-light); border: 1px solid var(--color-border);
+            border-radius: var(--border-radius); margin-bottom: 1rem; box-shadow: var(--shadow-sm);
+        }
+        .question-header {
+            padding: 1rem; font-weight: 500; display: flex; justify-content: space-between;
+            align-items: center; cursor: pointer; border-bottom: 1px solid transparent;
+        }
+        .question-card.open .question-header { border-bottom-color: var(--color-border); }
+        .question-body { padding: 1rem; border-top: 1px solid var(--color-border); }
+        .choice-editor { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; }
+        .delete-btn {
+            background: none; border: none; color: #adb5bd; cursor: pointer; padding: 0.5rem;
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+        }
+        .delete-btn:hover { color: #dc3545; background-color: #f8d7da; }
+        .add-question-buttons { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+        .btn {
+            background-color: #fff; border: 1px solid var(--color-border);
+            padding: 0.5rem 1rem; border-radius: var(--border-radius); cursor: pointer;
+            font-weight: 500; font-size: 0.9rem; transition: all 0.2s;
+            display: inline-flex; align-items: center; gap: 0.5rem;
+        }
+        .btn:hover { border-color: var(--color-primary); color: var(--color-primary); }
+        .preview-panel {
+            background-color: var(--color-bg-dark); padding: 2rem; display: flex; align-items: center;
+            justify-content: center; overflow: hidden; position: relative;
+        }
+        .preview-content {
+            width: 100%; max-width: 700px; height: 500px; color: var(--color-text-light);
+            display: flex; flex-direction: column; justify-content: center; position: relative;
+        }
+        .question-slide {
+            position: absolute; width: 100%; left: 0; right: 0;
+            display: flex; flex-direction: column; align-items: flex-start;
+        }
+        .slide-fade-enter-active, .slide-fade-leave-active { transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
+        .slide-fade-enter-from { opacity: 0; transform: translateY(30px); }
+        .slide-fade-leave-to { opacity: 0; transform: translateY(-30px); }
+        .question-prompt { font-size: 2.25rem; font-weight: 500; margin: 0; display: flex; align-items: center; gap: 1rem; }
+        .question-number { font-size: 1.5rem; font-weight: 400; color: var(--color-primary); }
+        .preview-input {
+            background: none; border: none; color: var(--color-text-light);
+            border-bottom: 2px solid var(--color-disabled); font-size: 2rem;
+            padding: 0.5rem 0; margin-top: 2rem; width: 100%; transition: border-color 0.3s;
+        }
+        .preview-input:focus { outline: none; border-bottom-color: var(--color-primary); }
+        .preview-input.has-error { border-bottom-color: var(--color-danger); animation: shake 0.5s; }
+        .preview-choices { margin-top: 2rem; list-style: none; padding: 0; display: flex; flex-direction: column; gap: 0.5rem; width: 100%; max-width: 400px; }
+        .preview-choices li button {
+            display: flex; align-items: center; gap: 1rem; width: 100%; padding: 0.75rem 1rem;
+            background-color: rgba(255, 255, 255, 0.1); border: 1px solid var(--color-disabled);
+            color: var(--color-text-light); border-radius: 0.25rem; cursor: pointer;
+            text-align: left; font-size: 1.1rem; transition: all 0.2s ease;
+        }
+        .preview-choices li button:hover { border-color: var(--color-primary); background-color: rgba(79, 70, 229, 0.3); }
+        .choice-key { border: 1px solid var(--color-text-light); padding: 0.2rem 0.5rem; border-radius: 0.2rem; font-size: 0.8rem; font-weight: bold; }
+        .preview-nav { position: absolute; bottom: 2.5rem; right: 0; display: flex; gap: 0.5rem; }
+        .nav-btn {
+            background-color: var(--color-primary); color: #fff; border: none; padding: 0.75rem;
+            border-radius: 50%; cursor: pointer; display: flex; align-items: center;
+            justify-content: center; transition: all 0.2s;
+        }
+        .nav-btn:hover:not(:disabled) { transform: translateY(-2px); }
+        .nav-btn:disabled { background-color: var(--color-disabled); cursor: not-allowed; }
+        .error-message {
+            color: var(--color-danger); margin-top: 1rem; font-weight: 500;
+            display: flex; align-items: center; gap: 0.5rem;
+            animation: shake 0.5s;
+        }
+        .progress-bar {
+            position: absolute; bottom: 0; left: 0; height: 4px;
+            background-color: var(--color-primary); transition: width 0.5s ease;
+        }
+    </style>
+</head>
+
+<!-- THE FIX: One single x-data component on the body to rule them all. -->
+<body x-data="formApp" novalidate>
+
+    <!-- =========== BUILDER PANEL (LEFT) =========== -->
+    <aside class="builder-panel">
+        <div>
+            <h1>Form Builder</h1>
+            <p style="margin-top: 0.5rem; color: #6c757d;">Powered by a single, unified Alpine.js component.</p>
+        </div>
+        <section>
+            <h2>Settings</h2>
+            <div class="input-group">
+                <label for="formTitle">Form Title</label>
+                <input id="formTitle" type="text" x-model="form.title" placeholder="My Awesome Form">
+            </div>
+        </section>
+        <section>
+            <h2>Questions</h2>
+            <div id="question-list">
+                <template x-if="form.questions.length === 0">
+                    <p style="color: #6c757d; text-align: center; padding: 2rem; border: 2px dashed var(--color-border); border-radius: var(--border-radius);">Add a question below!</p>
+                </template>
+                <template x-for="(question, index) in form.questions" :key="question.id">
+                    <div class="question-card" :class="{ 'open': question.isOpen }">
+                        <div class="question-header" @click="question.isOpen = !question.isOpen">
+                            <span x-text="question.text || 'New Question'"></span>
+                            <svg x-show="!question.isOpen" width="20" height="20" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd"></path></svg>
+                            <svg x-show="question.isOpen" width="20" height="20" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5 10a1 1 0 011-1h8a1 1 0 110 2H6a1 1 0 01-1-1z" clip-rule="evenodd"></path></svg>
+                        </div>
+                        <div class="question-body" x-show="question.isOpen" x-transition>
+                            <div class="input-group">
+                                <label :for="'q_text_'+question.id">Question Text</label>
+                                <input :id="'q_text_'+question.id" type="text" x-model="question.text">
+                            </div>
+                            <template x-if="question.type === 'multiple_choice'">
+                                <div class="input-group" style="margin-top: 1rem;">
+                                    <label>Choices</label>
+                                    <template x-for="(choice, choiceIndex) in question.choices" :key="choiceIndex">
+                                        <div class="choice-editor">
+                                            <input type="text" x-model="choice.text" :placeholder="'Choice ' + (choiceIndex + 1)">
+                                            <button class="delete-btn" @click="removeChoice(index, choiceIndex)" title="Remove choice">
+                                                 <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor"><path d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" /></svg>
+                                            </button>
+                                        </div>
+                                    </template>
+                                    <button class="btn" @click="addChoice(index)" style="margin-top: 0.5rem;">+ Add Choice</button>
+                                </div>
+                            </template>
+                            <button class="delete-btn" @click="removeQuestion(index)" style="margin-top: 1rem; color: #dc3545;">Delete Question</button>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </section>
+        <section>
+            <h2>Add Question</h2>
+            <div class="add-question-buttons">
+                <button class="btn" @click="addQuestion('welcome_screen')">👋 Welcome</button>
+                <button class="btn" @click="addQuestion('short_text')">✒️ Short Text</button>
+                <button class="btn" @click="addQuestion('multiple_choice')">🔢 Multiple Choice</button>
+                <button class="btn" @click="addQuestion('email')">📧 Email</button>
+                <button class="btn" @click="addQuestion('thank_you_screen')">🎉 Thank You</button>
+            </div>
+        </section>
+    </aside>
+
+    <!-- =========== PREVIEW PANEL (RIGHT) =========== -->
+    <!-- This panel now implicitly uses the `formApp` data from the body tag -->
+    <main class="preview-panel" @keyup.enter.window="if(shouldShowNextButton()) { advance() }" @keyup.arrow-up.window="goBack()" @keyup.arrow-down.window="advance()">
+        <div class="preview-content">
+            <!-- The logic here is identical, but now it reads from the unified component state -->
+            <template x-for="(question, index) in form.questions" :key="question.id">
+                <div x-show="currentIndex === index" class="question-slide" x-transition:enter.duration.500ms x-transition:leave.duration.300ms class="slide-fade">
+                    <template x-if="question.type === 'welcome_screen'">
+                        <div>
+                            <h2 class="question-prompt" x-text="question.text"></h2>
+                            <p style="font-size: 1.2rem; color: var(--color-disabled);" x-text="form.title"></p>
+                            <button class="btn" style="background-color: var(--color-primary); color: #fff; margin-top: 2rem; padding: 1rem 2rem; font-size: 1.1rem;" @click="advance()">Start →</button>
+                        </div>
+                    </template>
+                    <template x-if="question.type === 'short_text'">
+                        <div>
+                            <h3 class="question-prompt"><span class="question-number" x-text="(index) + ' →'"></span><span x-text="question.text"></span></h3>
+                            <input class="preview-input" type="text" x-model="answers[question.id]" placeholder="Type your answer here..." @input="dirty = true; delete errors[question.id]" :class="{ 'has-error': errors[question.id] }" x-init="$nextTick(() => $el.focus())">
+                        </div>
+                    </template>
+                    <template x-if="question.type === 'multiple_choice'">
+                         <div>
+                            <h3 class="question-prompt"><span class="question-number" x-text="(index) + ' →'"></span><span x-text="question.text"></span></h3>
+                             <ul class="preview-choices">
+                                 <template x-for="(choice, choiceIndex) in question.choices" :key="choiceIndex">
+                                     <li><button @click="selectChoiceAndAdvance(choiceIndex)"><span class="choice-key" x-text="choiceIndex + 1"></span><span x-text="choice.text"></span></button></li>
+                                 </template>
+                             </ul>
+                         </div>
+                    </template>
+                    <template x-if="question.type === 'email'">
+                        <div>
+                            <h3 class="question-prompt"><span class="question-number" x-text="(index) + ' →'"></span><span x-text="question.text"></span></h3>
+                            <input class="preview-input" type="email" x-model="answers[question.id]" placeholder="name@example.com" @input="dirty = true; delete errors[question.id]" :class="{ 'has-error': errors[question.id] }" x-init="$nextTick(() => $el.focus())">
+                        </div>
+                    </template>
+                    <template x-if="question.type === 'thank_you_screen'">
+                        <div>
+                             <h2 class="question-prompt" x-text="question.text"></h2>
+                             <p style="font-size: 1.2rem; color: var(--color-disabled);">Your submission has been recorded (not really!)</p>
+                             <button class="btn" style="margin-top: 2rem;" @click="restart()">Restart Form</button>
+                        </div>
+                    </template>
+                    <div x-show="errors[question.id]" x-text="errors[question.id]" class="error-message" x-transition></div>
+                </div>
+            </template>
+            <div class="preview-nav">
+                <button class="nav-btn" title="Previous (Up Arrow)" @click="goBack()" x-show="currentIndex > 0" x-transition>
+                    <svg width="24" height="24" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M8 15a.5.5 0 0 0 .5-.5V2.707l3.146 3.147a.5.5 0 0 0 .708-.708l-4-4a.5.5 0 0 0-.708 0l-4 4a.5.5 0 1 0 .708.708L7.5 2.707V14.5a.5.5 0 0 0 .5.5z"/></svg>
+                </button>
+                <button class="nav-btn" title="Next (Enter)" @click="advance()" x-show="shouldShowNextButton()" :disabled="!canAdvance()" x-transition>
+                     <svg width="24" height="24" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M8 1a.5.5 0 0 1 .5.5v11.793l3.146-3.147a.5.5 0 0 1 .708.708l-4 4a.5.5 0 0 1-.708 0l-4 4a.5.5 0 0 1 .708-.708L7.5 13.293V1.5A.5.5 0 0 1 8 1z"/></svg>
+                </button>
+            </div>
+            <div class="progress-bar" :style="`width: ${progress}%`"></div>
+        </div>
+    </main>
+    
+    <script>
+    document.addEventListener('alpine:init', () => {
+        Alpine.data('formApp', () => ({
+            // --- SINGLE SOURCE OF TRUTH ---
+            // Contains all state for Builder and Preview
+            
+            // 1. Builder State
+            form: {
+                title: 'Customer Feedback Survey',
+                questions: [
+                    { id: 1, type: 'welcome_screen', text: 'Help us improve!', isOpen: false },
+                    { id: 2, type: 'short_text', text: 'To start, what is your name?', isOpen: true },
+                    { id: 3, type: 'multiple_choice', text: 'How would you rate our service?', choices: [{text: 'Excellent'}, {text: 'Good'}, {text: 'Needs Improvement'}], isOpen: false },
+                    { id: 4, type: 'email', text: 'Thanks! What\'s a good email to reach you at?', isOpen: false },
+                    { id: 5, type: 'thank_you_screen', text: 'All done. Thanks for your help!', isOpen: false }
+                ]
+            },
+
+            // 2. Preview State
+            currentIndex: 0,
+            answers: {},
+            errors: {},
+            dirty: false,
+
+            // --- METHODS ---
+            
+            // Methods for Builder Panel
+            addQuestion(type) {
+                const newQuestion = { id: Date.now(), type: type, isOpen: true, text: `New ${type.replace(/_/g, ' ')} field` };
+                if (type === 'multiple_choice') {
+                    newQuestion.choices = [{text: 'Choice A'}, {text: 'Choice B'}];
+                }
+                this.form.questions.push(newQuestion);
+            },
+            removeQuestion(index) { 
+                if (confirm('Delete this question?')) { 
+                    this.form.questions.splice(index, 1);
+                    // If we delete the current question, go back one step.
+                    if (this.currentIndex >= index && this.currentIndex > 0) {
+                        this.currentIndex--;
+                    }
+                } 
+            },
+            addChoice(qIndex) { this.form.questions[qIndex].choices.push({ text: 'New Choice' }); },
+            removeChoice(qIndex, cIndex) { this.form.questions[qIndex].choices.splice(cIndex, 1); },
+
+            // Getters and Methods for Preview Panel
+            get progress() {
+                if (this.form.questions.length <= 1) return this.currentIndex > 0 ? 100 : 0;
+                return (this.currentIndex / (this.form.questions.length - 1)) * 100;
+            },
+            get currentQuestion() { return this.form.questions[this.currentIndex]; },
+            canAdvance() {
+                if (!this.currentQuestion) return false;
+                const instantTypes = ['welcome_screen', 'multiple_choice', 'thank_you_screen'];
+                if (instantTypes.includes(this.currentQuestion.type)) return true;
+                return !!this.answers[this.currentQuestion.id] && this.dirty;
+            },
+            shouldShowNextButton() {
+                if (!this.currentQuestion) return false;
+                const hideNextTypes = ['welcome_screen', 'multiple_choice', 'thank_you_screen'];
+                return !hideNextTypes.includes(this.currentQuestion.type);
+            },
+            validateCurrentStep() {
+                if (!this.currentQuestion) return true; // No question, no validation
+                delete this.errors[this.currentQuestion.id];
+                if (this.currentQuestion.type === 'email') {
+                    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                    if (!this.answers[this.currentQuestion.id] || !emailRegex.test(this.answers[this.currentQuestion.id])) {
+                        this.errors[this.currentQuestion.id] = 'Please enter a valid email address.';
+                        return false;
+                    }
+                }
+                return true;
+            },
+            advance() {
+                if (!this.canAdvance() || !this.validateCurrentStep()) return;
+                if (this.currentIndex < this.form.questions.length - 1) { 
+                    this.currentIndex++; this.dirty = false; 
+                }
+            },
+            goBack() { 
+                if (this.currentIndex > 0) { this.currentIndex--; } 
+            },
+            restart() { this.currentIndex = 0; this.answers = {}; this.errors = {}; },
+            selectChoiceAndAdvance(choiceIndex) {
+                if (!this.currentQuestion) return;
+                this.answers[this.currentQuestion.id] = this.currentQuestion.choices[choiceIndex].text;
+                // use $nextTick to ensure the state update is registered before advancing
+                this.$nextTick(() => this.advance());
+            }
+        }));
+    });
+    </script>
+</body>
+</html>
